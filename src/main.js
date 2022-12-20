@@ -1,14 +1,13 @@
-import filtersView from './views/filters-view.js';
-import sortingView from './views/sorting-view.js';
-import tripPresenter from './views/trip-presenter.js';
-import {render} from './render.js';
-import tripPresenter from './trip-presenter.js';
+import FiltersView from './views/filters-view';
+import { render } from './render';
+import ListPresenter from './presenters/list-presenter';
 
-const siteHeaderElement = document.querySelector('.trip-controls__filters');
-const siteMainElement = document.querySelector('.trip-events');
-const tripPresenter = new tripPresenter({pageContainer: siteMainElement});
+const siteMainElement = document.querySelector('.page-main');
+const siteFiltersElement = document.querySelector('.trip-controls');
 
-render(new filtersView(), siteHeaderElement);
-render(new sortingView(), siteMainElement);
 
-tripPresenter.init();
+render(new FiltersView(), siteFiltersElement);
+
+ListPresenter.init();
+
+export {siteMainElement};
