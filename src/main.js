@@ -4,10 +4,9 @@ import ListPresenter from './presenters/list-presenter';
 
 const siteMainElement = document.querySelector('.page-main');
 const siteFiltersElement = document.querySelector('.trip-controls');
-
+const siteContentElement = siteMainElement.querySelector('.trip-events');
+const listPresenter = new ListPresenter({listContainer: siteContentElement});
 
 render(new FiltersView(), siteFiltersElement);
 
-ListPresenter.init();
-
-export {siteMainElement};
+listPresenter.init();
