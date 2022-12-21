@@ -8,3 +8,8 @@ export const html = (strings, ...values) => strings.reduce((before, after, index
 
   return before + escape(String(value)) + after;
 });
+function getRandomArrayElement(items) {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+export {getRandomArrayElement};
