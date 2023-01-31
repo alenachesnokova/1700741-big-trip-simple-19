@@ -1,8 +1,8 @@
 import View from './views';
 import {html} from '../utils';
 import PointTypeView from './common/point-type-view';
-import PointTimeView from './common/point-time-view';
-import PointPriceView from './common/point-price-view';
+import DatesView from './common/dates-view';
+import BasePriceView from './common/base-price-view';
 import OffersView from './common/offers-view';
 import DestinationView from './common/destination-view';
 import DestinationDetailsView from './common/destination-detail-view';
@@ -33,6 +33,15 @@ export default class NewPointEditorView extends View {
      */
     this.destinationView = this.querySelector(String(DestinationView));
 
+    /**
+     * @type {DatesView}
+     */
+    this.datesView = this.querySelector(String(DatesView));
+
+    /**
+     * @type {BasePriceView}
+     */
+    this.basePriceView = this.querySelector(String(BasePriceView));
 
     /**
      * @type {OffersView}
@@ -43,6 +52,8 @@ export default class NewPointEditorView extends View {
      * @type {DestinationDetailsView}
      */
     this.destinationDetailsView = this.querySelector(String(DestinationDetailsView));
+
+    this.uiBlockerView = new UiBlockerView();
   }
 
   /**
@@ -50,12 +61,12 @@ export default class NewPointEditorView extends View {
    */
   createHtml() {
     return html`
-      <form class="event event--edit" action="#" method="post">
+      <form class="event event--edit" action="#" method="post" novalidate>
         <header class="event__header">
           <${PointTypeView}></${PointTypeView}>
           <${DestinationView}></${DestinationView}>
-          <${PointTimeView}></${PointTimeView}>
-          <${PointPriceView}></${PointPriceView}>
+          <${DatesView}></${DatesView}>
+          <${BasePriceView}></${BasePriceView}>
 
           <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
           <button class="event__reset-btn" type="reset">Cancel</button>
@@ -69,12 +80,17 @@ export default class NewPointEditorView extends View {
   }
 
   open() {
+    this.listView.fadeInRight();
     this.listView.prepend(this);
+    this.datesView.createCalendars();
+
     document.addEventListener('keydown', this);
   }
 
   close(notify = true) {
     this.remove();
+    this.datesView.destroyCalendars();
+
     document.removeEventListener('keydown', this);
 
     if (notify) {
@@ -91,8 +107,16 @@ export default class NewPointEditorView extends View {
 
     this.querySelector('.event__save-btn').textContent = text;
 
-    this.uiBlockerView.toogle(flag);
+    this.uiBlockerView.toggle(flag);
   }
+
+  /**
+   * @param {string} name
+   */
+  findByName(name) {
+    return this.querySelector('form').elements[name];
+  }
+
 
   /**
    * @param {KeyboardEvent} event

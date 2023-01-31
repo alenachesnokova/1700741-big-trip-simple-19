@@ -1,6 +1,9 @@
-import '../framework/ui-blocker/ui-blocker.css';
+import './ui-blocker-view.css';
 import View from './views';
 
+/**
+ * @implements {EventListenerObject}
+ */
 export default class UiBlockerView extends View {
   constructor() {
     super();
@@ -11,22 +14,22 @@ export default class UiBlockerView extends View {
   /**
    * @param {Boolean} flag
    */
-  toogle(flag) {
+  toggle(flag) {
     if (flag) {
       document.body.append(this);
-      document.addEventListener('keydown', this.handleKeydown);
-    }
-    else {
+      document.addEventListener('keydown', this);
+    } else {
       this.remove();
-      document.removeEventListener('keydown', this.handleKeydown);
+      document.removeEventListener('keydown', this);
     }
   }
 
   /**
    * @param {KeyboardEvent} event
    */
-  handleKeydown(event) {
+  handleEvent(event) {
     event.preventDefault();
   }
 }
 
+customElements.define(String(UiBlockerView), UiBlockerView);

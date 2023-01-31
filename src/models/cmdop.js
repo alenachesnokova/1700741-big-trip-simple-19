@@ -1,125 +1,86 @@
-import { PointType } from '../enums';
-import { pointTitleMap } from '../maps';
-import {formatNumber} from '../utils';
-import Presenter from './presenter';
+import FilterView from './views/filter-view';
+import SortView from './views/sort-view';
+import './views/point-view';
+import ListView from './views/list-view';
+import NewPointEditorView from './views/new-point-editor-view';
+
+import Store from './store';
+
+import CollectionModel from './models/collection-model';
+
+import PointAdapter from './adapters/point-adapter';
+import DestinationAdapter from './adapters/destination-adapter';
+import OfferGroupAdapter from './adapters/offer-group-adapter';
+
+import {FilterType, SortType} from './enums';
+import {filterCallbackMap, sortCallbackMap} from './maps';
+
+import ListPresenter from './presenters/list-presenter';
+import FilterPresenter from './presenters/filter-presenter';
+import SortPresenter from './presenters/sort-presenter';
+import NewPointButtonPresenter from './presenters/new-point-button-presenter';
+import NewPointEditorPresenter from './presenters/new-point-editor-presenter';
+import PointEditorView from './views/point-editor-view';
+import PointEditorPresenter from './presenters/point-editor-presenter';
+import EmptyListPresenter from './presenters/empty-list-presenter';
+
+
+const BASE = 'https://19.ecmascript.pages.academy/big-trip-simple';
+const AUTH = 'Basic dfd345yhdfg';
 
 /**
- * @extends {Presenter<NewPointEditorView>}
+ * @type {Store<Point>}
  */
-export default class NewPointEditorPresenter extends Presenter {
-  constructor() {
-    super(...arguments);
-
-    const pointTypeOptions =
-      Object.entries(pointTitleMap).map(([value, title]) => ({title, value}));
-    //
-    this.view.pointTypeView.setOptions(pointTypeOptions);
-    this.view.pointTypeView.addEventListener('change', this.handlePointTypeViewChange.bind(this));
+const pointsStore = new Store(`${BASE}/points`, AUTH);
+const pointsModel = new CollectionModel({
+  store: pointsStore,
+  adapt: (item) => new PointAdapter(item),
+  filter: filterCallbackMap[FilterType.EVERYTHING],
+  sort: sortCallbackMap[SortType.DAY]
+});
 
 
-    const destinationOptions =
-      this.destinationsModel.listAll().map((item) => ({title: '', value: item.name}));
-    //
-    this.view.destinationView.setOptions(destinationOptions);
-    this.view.destinationView.addEventListener('input', this.handleDestinationViewInput.bind(this));
+/**
+ * @type {Store<Destination>}
+ */
+const destinationsStore = new Store(`${BASE}/destinations`, AUTH);
+const destinationsModel = new CollectionModel({
+  store: destinationsStore,
+  adapt: (item) => new DestinationAdapter(item)
+});
 
+/**
+ * @type {Store<OfferGroup>}
+ */
+const OfferGroupStore = new Store(`${BASE}/offers`, AUTH);
+const offerGroupsModel = new CollectionModel({
+  store: OfferGroupStore,
+  adapt: (item) => new OfferGroupAdapter(item)
+});
 
-    this.view.addEventListener('submit', this.handleViewSubmit.bind(this));
-    this.view.addEventListener('reset', this.handleViewReset.bind(this));
-    this.view.addEventListener('close', this.handleViewClose.bind(this));
-  }
+const models = [pointsModel, destinationsModel, offerGroupsModel];
+const newPointButtonView = document.querySelector('.trip-main__event-add-btn');
+const filterView = document.querySelector(String(FilterView));
+const sortView = document.querySelector(String(SortView));
+const listView = document.querySelector(String(ListView));
+const emptyListView = document.querySelector('.trip-events__msg');
+const newPointEditorView = new NewPointEditorView(listView);
+const pointEditorView = new PointEditorView(listView);
 
-  /**
-   * @param {PointAdapter} point
-   */
-  updateView(point) {
-    const destination = this.destinationsModel.findById(point.destinationId);
+Promise.all(
+  models.map((model) => model.ready())
+)
+  .then(() => {
+    new NewPointButtonPresenter(newPointButtonView, models);
+    new SortPresenter(sortView, models);
+    new FilterPresenter(filterView, models);
+    new ListPresenter(listView, models);
+    new EmptyListPresenter(emptyListView, models);
+    new NewPointEditorPresenter(newPointEditorView, models);
+    new PointEditorPresenter(pointEditorView, models);
+  })
 
-    this.view.pointTypeView.setValue(point.type);
-    this.view.destinationView.setLabel(pointTitleMap[point.type]);
-    this.view.destinationView.setValue(destination.name);
+  .catch((error) => {
+    emptyListView.textContent = error;
+  });
 
-    // this.view.basePrice.setValue(point.basePrice);
-
-    this.updateOffersView(point.offerIds);
-    this.updateDestinationDetailsView(destination);
-  }
-
-  /**
-   * @param {string[]} offersIds
-   */
-  updateOffersView(offersIds = []) {
-    const pointType = this.view.pointTypeView.getValue();
-    const offerGroup = this.offerGroupsModel.findById(pointType);
-
-    const options = offerGroup.items.map((offer) => ({
-      ...offer,
-      price: formatNumber(offer.price),
-      checked: offersIds.includes(offer.id)
-    }));
-
-    this.view.offersView.setOptions(options);
-    this.view.offersView.hidden = !options.length;
-  }
-
-  /**
-   * @param {DestinationAdapter} [destination]
-   */
-  updateDestinationDetailsView(destination) {
-    this.view.destinationDetailsView.hidden = !destination;
-
-    if (destination) {
-      this.view.destinationDetailsView.setContent(destination);
-    }
-  }
-
-  /**
-   * @override
-   */
-  handleNavigation() {
-    if (this.location.pathname === '/new') {
-      const point = this.pointsModel.item();
-
-      point.type = PointType.BUS;
-      point.destinationId = this.destinationsModel.item(0).id;
-      point.startDate = (new Date()).toJSON();
-      point.endDate = (new Date()).toJSON();
-      point.basePrice = 100;
-      point.offerIds = ['1', '2', '3'];
-
-      this.view.open();
-      this.updateView(point);
-    } else {
-      this.view.close(false);
-    }
-  }
-
-  /**
-   * @param {SubmitEvent} event
-   */
-  handleViewSubmit(event) {
-    event.preventDefault();
-  }
-
-  handleViewReset() {
-    this.view.close();
-  }
-
-  handleViewClose() {
-    this.navigate('/');
-  }
-
-  handlePointTypeViewChange() {
-    const pointType = this.view.pointTypeView.getValue();
-
-    this.view.destinationView.setLabel(pointTitleMap[pointType]);
-    this.updateOffersView();
-  }
-
-  handleDestinationViewInput() {
-    const destinationName = this.view.destinationView.getValue();
-    const destination = this.destinationsModel.findBy('name', destinationName);
-
-    this.updateDestinationDetailsView(destination);
-  }
-}

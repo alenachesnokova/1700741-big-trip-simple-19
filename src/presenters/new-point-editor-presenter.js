@@ -1,13 +1,12 @@
 import { PointType } from '../enums';
 import { pointTitleMap } from '../maps';
 import { formatNumber } from '../utils';
-import View from '../views/views';
 import Presenter from './presenter';
-import {UiBlockerView.js} from './';
-import PointTimeView from '../views/common/point-time-view';
+import '../views/ui-blocker-view';
 
 /**
- * @extends {Presenter<NewPointEditorView>}
+ * @template {NewPointEditorView} View
+ * @extends {Presenter<View>}
  */
 export default class NewPointEditorPresenter extends Presenter {
   constructor() {
@@ -27,7 +26,7 @@ export default class NewPointEditorPresenter extends Presenter {
     /** Установили значение по умолчанию */
     this.view.pointTypeView.setValue(PointType.BUS);
 
-    /** Cоставили список пунктов назначения */
+    /** Вернули список адаптированных данных */
 
     const destinationOptions =
       this.destinationsModel.listAll().map((item) => ({title: '', value: item.name}));
@@ -36,15 +35,10 @@ export default class NewPointEditorPresenter extends Presenter {
     this.view.destinationView.setOptions(destinationOptions);
     this.view.destinationView.addEventListener('input', this.handleDestinationViewInput.bind(this));
 
-    this.view.pointTimeView.setConfig({
-      dateformat: 'd/m/y H:m',
-
-      locale: {
-        'time_24hr': true,
-        firstDayWeek: 1
-      }
-    })
-
+    this.view.datesView.setConfig({
+      dateFormat: 'd/m/y H:i',
+      locale: {firstDayOfWeek: 1, 'time_24hr': true}
+    });
     this.view.addEventListener('submit', this.handleViewSubmit.bind(this));
     this.view.addEventListener('reset', this.handleViewReset.bind(this));
     this.view.addEventListener('close', this.handleViewClose.bind(this));
@@ -59,7 +53,11 @@ export default class NewPointEditorPresenter extends Presenter {
 
     this.view.pointTypeView.setValue(point.type);
     this.view.destinationView.setLabel(pointTitleMap[point.type]);
-    this.view.destinationView.setValue(destination.name);
+    this.view.destinationView.setValue(destination?.name ?? '');
+    this.view.datesView.setValues([point.startDate, point.endDate]);
+    this.view.basePriceView.setValue(point.basePrice);
+
+
     this.updateOffersView(point.offerIds);
     this.updateDestinationDetailsView(destination);
   }
@@ -83,8 +81,8 @@ export default class NewPointEditorPresenter extends Presenter {
   }
 
   /**
- * @param {DestinationAdapter} [destination]
- */
+   * @param {DestinationAdapter} [destination]
+   */
   updateDestinationDetailsView(destination) {
     this.view.destinationDetailsView.hidden = !destination;
 
@@ -99,21 +97,31 @@ export default class NewPointEditorPresenter extends Presenter {
   handleNavigation() {
     if (this.location.pathname === '/new') {
 
+      /**Делаем значения по умолчанию поля редактирования */
       const point = this.pointsModel.item();
 
-      point.type = PointType.BUS;
-      point.destinationId = this.destinationsModel.item(0).id;
-      point.startDate = (new Date()).toJSON();
-      point.endDate = point.startDate;
-      point.basePrice = 100;
-      point.offerIds = ['1', '2', '3'];
+      point.type = PointType.FLIGHT;
+      /**Убрали, чтобы форма была пустая */
+      // point.destinationId =
+      // // this.destinationsModel.item(0).id;
+      // point.startDate = (new Date()).toJSON();
+      // point.endDate = point.startDate;
+      // point.basePrice = 100;
+      // /**те оферы, которые отмечены */
+      // point.offerIds = [];
 
       this.view.open();
       this.updateView(point);
-    }
-    else {
+    } else {
       this.view.close(false);
     }
+  }
+
+  /**
+   * @param {PointAdapter} point
+   */
+  async save(point) {
+    await this.pointsModel.add(point);
   }
 
   /**
@@ -125,18 +133,40 @@ export default class NewPointEditorPresenter extends Presenter {
     this.view.awaitSave(true);
 
     try {
+      const point = this.pointsModel.item();
+      const destinationName = this.view.destinationView.getValue();
+      const destination = this.destinationsModel.findBy('name', destinationName);
+      const [startDate, endDate] = this.view.datesView.getValues();
 
+      point.type = this.view.pointTypeView.getValue();
+      point.destinationId = destination?.id;
+      point.startDate = startDate;
+      point.endDate = endDate;
+      point.basePrice = this.view.basePriceView.getValue();
+      point.offerIds = this.view.offersView.getValues();
+
+      await this.save(point);
+      this.view.close();
     }
 
     catch(exception) {
-      console.log(exception);
       this.view.shake();
+
+      if (exception.cause?.error) {
+        const [{fieldName}] = exception.cause.error;
+
+        this.view.findByName(fieldName)?.focus();
+      }
     }
 
     this.view.awaitSave(false);
   }
 
-  handleViewReset() {
+  /**
+   * @param {Event} event
+   */
+  handleViewReset(event) {
+    void event;
     this.view.close();
   }
 
@@ -144,11 +174,14 @@ export default class NewPointEditorPresenter extends Presenter {
     this.navigate('/');
   }
 
+
+  /**
+   * Опредеклили текущий вид транспорта и подставили в подпись destination этот тип транспорта
+   */
   handlePointTypeViewChange() {
     const pointType = this.view.pointTypeView.getValue();
 
     this.view.destinationView.setLabel(pointTitleMap[pointType]);
-
     this.updateOffersView();
   }
 
@@ -158,5 +191,4 @@ export default class NewPointEditorPresenter extends Presenter {
 
     this.updateDestinationDetailsView(destination);
   }
-
 }

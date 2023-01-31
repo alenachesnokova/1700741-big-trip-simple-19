@@ -9,7 +9,7 @@ export default class PointView extends View {
   constructor(state) {
     super(state);
 
-    this.classList.add('trip-events__item');
+    this.classList.add('trip-events__item', 'trip-events__item--edit');
     this.setOffers(state.offers);
   }
 
@@ -37,6 +37,9 @@ export default class PointView extends View {
         </p>
         <h4 class="visually-hidden">Offers:</h4>
         <ul class="event__selected-offers">
+          <li class="event__offer">
+            <span class="event__offer-title">No additional offers</span>
+          </li>
         </ul>
         <button class="event__rollup-btn" type="button">
           <span class="visually-hidden">Open event</span>
@@ -58,11 +61,19 @@ export default class PointView extends View {
     `;
   }
 
+  createEmptyOfferHtml() {
+    return html`
+      <li class="event__offer">
+      </li>
+    `;
+  }
+
   /**
    * @param {OfferViewState[]} states
    */
   setOffers(states) {
-    const offersHtml = states.map(this.createOfferHtml).join('');
+    const offersHtml = states.length ?
+      states.map(this.createOfferHtml).join('') : this.createEmptyOfferHtml();
 
     this.querySelector('.event__selected-offers').innerHTML = offersHtml;
   }

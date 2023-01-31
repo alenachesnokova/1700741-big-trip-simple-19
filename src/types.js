@@ -96,14 +96,6 @@
   */
 
 /**
- * @typedef OfferToggleViewState
- * @prop {string} id
- * @prop {string} title
- * @prop {string} price
- * @prop {boolean} checked
- */
-
-/**
  * @typedef OptionViewState
  * @prop {string} title
  * @prop {string} value
@@ -125,5 +117,7 @@
  */
 
 /**
- *
+ * @typedef {import('flatpickr/dist/types/instance').Instance} Calendar
+ * @typedef {import('flatpickr/dist/types/options').Options} CalendarConfig
  */
+

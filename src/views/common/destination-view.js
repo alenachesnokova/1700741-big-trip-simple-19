@@ -26,8 +26,7 @@ export default class DestinationView extends View {
    */
   createOptionHtml(state) {
     return html`
-      <option value="${state.value}">${state.value}
-      </option>
+      <option value="${state.value}">${state.title}</option>
     `;
   }
 
@@ -35,7 +34,7 @@ export default class DestinationView extends View {
    * @param {Picture} state
    * сделали разметку для каждой картинки пункта назначения
    */
-  createPicrureHtml(state) {
+  createPictureHtml(state) {
     return html`
       <img
         class="event__photo"
@@ -49,7 +48,7 @@ export default class DestinationView extends View {
    * Добавили разметку разные картинки к пункту назначения
    */
   setContent(state) {
-    const picturesHtml = state.pictures.map(this.createPicrureHtml).join('');
+    const picturesHtml = state.pictures.map(this.createPictureHtml).join('');
 
     this.querySelector('.event__photos-tape').innerHTML = picturesHtml;
     this.querySelector('.event__destination-description').textContent = state.description;
@@ -62,20 +61,27 @@ export default class DestinationView extends View {
   setOptions(states) {
     const optionsHtml = states.map(this.createOptionHtml).join('');
     this.querySelector('datalist'). insertAdjacentHTML('beforeend', optionsHtml);
-
   }
 
-
+  /**
+   * Передаем название города
+   * @param {String} value
+   */
   setValue(value) {
     this.querySelector('input').value = value;
   }
 
+  /**
+   * Возвращаем название города
+   * @returns {String}
+   */
   getValue() {
     return this.querySelector('input').value;
   }
 
 
   /**
+  * Текстовое содержимое типа транспорта около названия города
   * @param {string} label
   */
 

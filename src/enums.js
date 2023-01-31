@@ -34,6 +34,5 @@ export const PointType = {
 
 export const ButtonState = {
   DEFAULT: 0,
-  PRESSED: 1,
-
-}
+  PRESSED: 1
+};

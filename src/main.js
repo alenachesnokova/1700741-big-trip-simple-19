@@ -1,11 +1,9 @@
 import './views/point-view';
-import './views/sorting-view';
 import ListView from './views/list-view';
 import FiltersView from './views/filters-view';
 import SortingView from './views/sorting-view';
 import NewPointEditorView from './views/new-point-editor-view';
-
-import './views/new-point-editor-view';
+import PointEditorView from './views/point-editor-view';
 
 import Store from './store';
 
@@ -23,6 +21,8 @@ import FilterPresenter from './presenters/filter-presenter';
 import SortPresenter from './presenters/sort-presenter';
 import NewPointButtonPresenter from './presenters/new-point-button-presenter';
 import NewPointEditorPresenter from './presenters/new-point-editor-presenter';
+import EmptyListPresenter from './presenters/empty-list-presenter';
+
 
 const BASE = 'https://19.ecmascript.pages.academy/big-trip-simple';
 const AUTH = 'Basic qwertyalena';
@@ -34,8 +34,8 @@ const pointsStore = new Store(`${BASE}/points`, AUTH);
 const pointsModel = new CollectionModel({
   store: pointsStore,
   adapt: (item) => new PointAdapter(item),
-  filter: filterCallbackMap[FilterType.FUTURE],
-  sort: sortCallbackMap[SortType.DAY, SortType.PRICE]
+  filter: filterCallbackMap[FilterType.EVERYTHING],
+  sort: sortCallbackMap[SortType.DAY]
 });
 
 /**
@@ -50,34 +50,34 @@ const destinationsModel = new CollectionModel({
 /**
  * @type {Store<OfferGroup>}
  */
-const offersGroupsStore = new Store(`${BASE}/offers`, AUTH);
+const offerGroupStore = new Store(`${BASE}/offers`, AUTH);
 const offerGroupsModel = new CollectionModel({
-  store: offersGroupsStore,
+  store: offerGroupStore,
   adapt: (item) => new OfferGroupAdapter(item)
 });
 
 const models = [pointsModel, destinationsModel, offerGroupsModel];
-
 const newPointButtonView = document.querySelector('.trip-main__event-add-btn');
 const filterView = document.querySelector(String(FiltersView));
 const sortView = document.querySelector(String(SortingView));
 const listView = document.querySelector(String(ListView));
+const emptyListView = document.querySelector('.trip-events__msg');
 const newPointEditorView = new NewPointEditorView(listView);
+const pointEditorView = new PointEditorView(listView);
 
 Promise.all(
   models.map((model) => model.ready())
 )
-  .then(async () => {
-
+  .then(() => {
     new NewPointButtonPresenter(newPointButtonView, models);
-    new FilterPresenter(filterView, models);
     new SortPresenter(sortView, models);
+    new FilterPresenter(filterView, models);
     new ListPresenter(listView, models);
+    new EmptyListPresenter(emptyListView, models);
     new NewPointEditorPresenter(newPointEditorView, models);
+    new PointEditorPresenter(pointEditorView, models);
   })
 
   .catch((error) => {
-    console.log(error);
+    emptyListView.textContent = error;
   });
-
-
